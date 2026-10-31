@@ -21,11 +21,20 @@ from . import codici as C
 PROFILO_DOMESTICO = {"F1": 0.33, "F2": 0.31, "F3": 0.36}
 PROFILO_ALTRI_USI = {"F1": 0.44, "F2": 0.24, "F3": 0.32}
 
-ESCLUSI = (
-    "Esclusi: trasporto e gestione contatore, oneri generali di sistema, accise, IVA, "
-    "dispacciamento regolato e sconti condizionati. Sono uguali per tutte le offerte a parita "
-    "di cliente, quindi il confronto tra offerte resta valido, ma il totale non e la bolletta."
-)
+
+
+def esclusi(commodity: str) -> str:
+    """Cosa non e compreso nella stima, per commodity."""
+    regolate = (
+        "trasporto e gestione del contatore, oneri generali di sistema, dispacciamento regolato, accise e IVA"
+        if commodity == "luce"
+        else "trasporto e gestione del contatore, oneri generali di sistema, accise, addizionale regionale e IVA"
+    )
+    return (
+        f"Esclusi {regolate}: a parita di cliente sono uguali per tutte le offerte, quindi il confronto "
+        "resta valido ma il totale non e la bolletta. Non sono conteggiati nemmeno gli sconti condizionati "
+        "(es. fattura elettronica o domiciliazione), che dipendono da cosa sceglie il cliente."
+    )
 
 
 class Calcolo:
@@ -80,7 +89,7 @@ class Calcolo:
         return {
             "codice": self.offerta["codice"],
             "nome": self.offerta["nome"],
-            "venditore": self.offerta.get("venditore") or self.offerta["contatti"].get("sito"),
+            "venditore": self.offerta.get("venditore"),
             "piva": self.offerta["piva"],
             "fonte": self.offerta["fonte"],
             "tipo_prezzo": self.offerta["tipo_prezzo"],
@@ -91,7 +100,7 @@ class Calcolo:
             "dettaglio": self.dettagli,
             "stima_completa": self.completa,
             "note": self.note,
-            "esclusi": ESCLUSI,
+            "esclusi": esclusi(self.offerta["commodity"]),
         }
 
 
@@ -153,6 +162,10 @@ def _componenti(calcolo: Calcolo) -> None:
             etichetta = nome if fascia is None else f"{nome} {C.decodifica(C.FASCIA, fascia)}"
             for prezzo, peso in zip(prezzi, _pesi_periodo(prezzi)):
                 valore, unita = prezzo["prezzo"], prezzo["unita"]
+                if peso == 0 and unita != "05":
+                    # Prezzo che si applica solo dopo il primo anno: non entra nella stima annua.
+                    calcolo.nota(f"'{etichetta}': il prezzo di {valore:g} {C.decodifica(C.UNITA_MISURA, unita)} vale dopo il primo anno e non e incluso.")
+                    continue
                 da, a = prezzo.get("consumo_da"), prezzo.get("consumo_a")
                 if prezzo.get("periodo", {}).get("valido_fino"):
                     calcolo.nota(f"'{nome}': prezzo valido fino al {prezzo['periodo']['valido_fino']}, considerato per tutto l'anno.")

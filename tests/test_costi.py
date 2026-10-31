@@ -167,3 +167,19 @@ def test_placet_fisso_ignora_le_fasce_a_zero():
 def test_placet_variabile():
     r = stima(placet("variabile", {}, 100, alpha=0.01), 1000)
     assert r["costo_vendita_anno"] == pytest.approx(100 + 0.20 * 1.1 * 1000 + 0.01 * 1000)
+
+
+def test_prezzo_dopo_il_primo_anno_non_crea_righe_a_zero():
+    o = offerta(componenti=[componente(
+        "04", prezzo(0.10, fascia="01", periodo={"durata_mesi": 12}), prezzo(0.20, fascia="01"), nome="Prezzo",
+    )])
+    r = stima(o, 1000)
+    assert r["costo_vendita_anno"] == pytest.approx(100)
+    assert r["dettaglio"]["quota energia"] == ["Prezzo F1 (o monorario): 100.00 €"]
+    assert any("dopo il primo anno" in n for n in r["note"])
+
+
+def test_nota_esclusi_diversa_per_luce_e_gas():
+    assert "dispacciamento" in costi.esclusi("luce")
+    assert "dispacciamento" not in costi.esclusi("gas")
+    assert "sconti condizionati" in costi.esclusi("gas")

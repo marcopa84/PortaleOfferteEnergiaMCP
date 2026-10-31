@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import datetime as dt
+import difflib
 import gzip
+import re
 import time
 import unicodedata
 
@@ -18,6 +20,19 @@ def normalizza(testo: str) -> str:
     """Minuscolo, senza accenti e spazi doppi, per confronti tolleranti."""
     senza_accenti = unicodedata.normalize("NFKD", testo).encode("ascii", "ignore").decode()
     return " ".join(senza_accenti.lower().replace("'", " ").replace("-", " ").split())
+
+
+def compatta(testo: str) -> str:
+    """Solo lettere e cifre: "Dolomiti Energia" e "www.dolomitienergia.it" diventano confrontabili."""
+    return re.sub(r"[^a-z0-9]", "", normalizza(testo))
+
+
+# Parole che spesso si omettono nei nomi dei comuni ("Reggio Calabria" per "Reggio di Calabria").
+_PAROLE_VUOTE = {"di", "de", "del", "dei", "della", "delle", "degli", "d", "nel", "nell", "nella", "in", "sul", "sull", "sulla", "l", "la", "il", "lo", "e"}
+
+
+def _senza_parole_vuote(testo: str) -> str:
+    return " ".join(p for p in normalizza(testo).split() if p not in _PAROLE_VUOTE)
 
 
 class ErroreRicerca(ValueError):
@@ -120,18 +135,47 @@ class Archivio:
         if valore.endswith(")") and "(" in valore:
             valore, _, sigla = valore[:-1].rpartition("(")
             sigla = sigla.strip().upper()
+        candidati = [c for c in self.comuni if not sigla or c["sigla"] == sigla]
         cercato = normalizza(valore)
-        trovati = [c for c in self.comuni if normalizza(c["nome"]) == cercato]
-        if sigla:
-            trovati = [c for c in trovati if c["sigla"] == sigla]
+        trovati = [c for c in candidati if normalizza(c["nome"]) == cercato]
+        if not trovati:
+            # Forma d'uso senza preposizioni: "Reggio Calabria", "Reggio Emilia".
+            ridotto = _senza_parole_vuote(valore)
+            trovati = [c for c in candidati if _senza_parole_vuote(c["nome"]) == ridotto]
         if len(trovati) == 1:
             return trovati[0]
         if len(trovati) > 1:
             opzioni = ", ".join(f"{c['nome']} ({c['sigla']})" for c in trovati)
             raise ErroreRicerca(f"Piu comuni con questo nome: {opzioni}. Specificare la sigla della provincia.")
-        simili = [c for c in self.comuni if cercato in normalizza(c["nome"])][:8]
-        suggerimento = f" Forse: {', '.join(c['nome'] + ' (' + c['sigla'] + ')' for c in simili)}." if simili else ""
+        simili = self._comuni_simili(valore, candidati)
+        elenco = ", ".join(f"{c['nome']} ({c['sigla']})" for c in simili)
+        suggerimento = f" Forse: {elenco}." if simili else ""
         raise ErroreRicerca(f"Comune '{comune}' non trovato.{suggerimento}")
+
+    @staticmethod
+    def _comuni_simili(valore: str, candidati: list[dict]) -> list[dict]:
+        """Comuni con parole che iniziano come quelle cercate; se non ce ne sono, i nomi piu somiglianti (refusi)."""
+        parole = _senza_parole_vuote(valore).split()
+        simili = [
+            c for c in candidati
+            if parole and all(any(p.startswith(q) for p in normalizza(c["nome"]).split()) for q in parole)
+        ]
+        if simili:
+            return simili[:8]
+        per_nome = {normalizza(c["nome"]): c for c in candidati}
+        return [per_nome[n] for n in difflib.get_close_matches(normalizza(valore), per_nome, n=8, cutoff=0.75)]
+
+    def suggerisci_venditori(self, testo: str) -> list[str]:
+        """Venditori dal nome o sito simile al testo, per quando una ricerca non trova nulla."""
+        etichette: dict[str, str] = {}
+        for o in self.offerte:
+            etichetta = o["venditore"] or o["contatti"].get("sito")
+            if etichetta:
+                etichette.setdefault(compatta(etichetta), etichetta)
+        cercato = compatta(testo)
+        vicini = difflib.get_close_matches(cercato, etichette, n=5, cutoff=0.6)
+        parziali = [k for k in etichette if cercato[:5] and cercato[:5] in k and k not in vicini][:5]
+        return [etichette[k] for k in vicini + parziali][:5]
 
     def risolvi_regione(self, regione: str) -> str:
         valore = regione.strip()
@@ -237,7 +281,7 @@ class Archivio:
         """Filtra le offerte. Restituisce (offerte, comune risolto o None)."""
         comune_info = self.risolvi_comune(comune) if comune else None
         codice_regione = self.risolvi_regione(regione) if regione else None
-        cerca_venditore = normalizza(venditore) if venditore else None
+        cerca_venditore = compatta(venditore) if venditore else None
         cerca_testo = normalizza(testo) if testo else None
         adesso = dt.datetime.now().isoformat()
 
@@ -271,8 +315,8 @@ class Archivio:
                     continue
             if cerca_venditore and not (
                 cerca_venditore == o["piva"]
-                or cerca_venditore in normalizza(o["venditore"] or "")
-                or cerca_venditore in normalizza(o["contatti"].get("sito") or "")
+                or cerca_venditore in compatta(o["venditore"] or "")
+                or cerca_venditore in compatta(o["contatti"].get("sito") or "")
             ):
                 continue
             if cerca_testo and cerca_testo not in normalizza(f"{o['nome']} {o.get('descrizione') or ''}"):

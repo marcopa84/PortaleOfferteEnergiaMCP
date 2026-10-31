@@ -17,12 +17,12 @@ advice. The documentation is in Italian because the data only concerns the Itali
 
 | Tool | Cosa fa |
 |---|---|
-| `cerca_offerte` | Filtra per luce/gas/dual, cliente, comune o regione, fisso/variabile, mercato libero/PLACET, venditore, testo. Con `consumo_annuo` ordina per costo stimato |
+| `cerca_offerte` | Filtra per luce/gas/dual, cliente, comune o regione, fisso/variabile, mercato libero/PLACET, venditore, testo. Con `consumo_annuo` ordina per costo stimato. Le versioni della stessa offerta (es. edizioni mensili) sono raggruppate in una riga |
 | `dettaglio_offerta` | Prezzi per fascia, indice, sconti, condizioni contrattuali, zone e contatti, con i codici già tradotti |
-| `stima_costo` | Confronta fino a 20 offerte con il dettaglio delle voci; accetta la ripartizione F1/F2/F3 del cliente |
+| `stima_costo` | Confronta fino a 20 offerte luce oppure gas con il dettaglio delle voci; accetta la ripartizione F1/F2/F3 del cliente. Le dual si stimano tramite le offerte luce e gas collegate |
 | `elenco_venditori` | Venditori con il numero di offerte per commodity |
 | `indici_prezzi` | Storico mensile di PUN, PSV, PE, CMEM, Psbil |
-| `parametri_regolati` | Accise, oneri, trasporto, PCV, QVD, IVA, perdite di rete |
+| `parametri_regolati` | Corrispettivi regolati pubblicati con le offerte: oneri, trasporto, PCV, QVD, IVA, perdite di rete, accise della luce (quelle del gas non sono negli open data). Il file ufficiale non riporta le unità di misura |
 | `stato_dati` | Data dei dati, conteggi, cache; con `aggiorna=true` riscarica |
 | `controlla_aggiornamenti` | Dice all'assistente se su GitHub c'è una versione più recente (una volta per conversazione) |
 
@@ -159,7 +159,9 @@ Non è la bolletta e non coincide con la "spesa annua stimata" del Portale:
 - **esclusi** trasporto e gestione del contatore, oneri di sistema, accise e IVA, uguali per tutte le offerte a
   parità di cliente;
 - per le **variabili** si usa il valore storico dell'indice (ultimo mese o media 12 mesi), non le quotazioni
-  forward usate dal Portale, che non sono open data: la stima segue l'andamento passato, non quello futuro;
+  forward usate dal Portale, che non sono open data: la stima segue l'andamento passato, non quello futuro.
+  `stima_costo` riporta il costo con entrambi i riferimenti e le risposte avvisano quando l'ultimo mese si
+  discosta di oltre il 20% dalla media;
 - il **TTF** non è tra i prezzi storici pubblicati: le offerte indicizzate al TTF risultano "stima incompleta";
 - gli sconti **condizionati** (fattura elettronica, domiciliazione…) non sono conteggiati, come fa il Portale;
 - profilo per fasce standard: domestico F1 33%, F2 31%, F3 36%; altri usi 44%, 24%, 32%.
@@ -172,7 +174,9 @@ Ogni stima riporta voci, dettaglio e note sulle approssimazioni applicate.
   si mostrano partita IVA e sito.
 - Lo stesso codice offerta compare talvolta con venditori diversi: `dettaglio_offerta` li riporta tutti e
   accetta la `piva` per sceglierne uno.
-- Non c'è la ricerca per CAP: si indica il comune (nome, "Nome (SIGLA)" o codice ISTAT).
+- Non c'è la ricerca per CAP: si indica il comune (nome, "Nome (SIGLA)" o codice ISTAT). Sono accettate le
+  forme d'uso ("Reggio Calabria" per "Reggio di Calabria") e per i nomi sbagliati vengono proposti i più simili.
+- Il filtro `residente` incide poco: poche offerte dichiarano se sono riservate a residenti o non residenti.
 
 ## Avvertenze legali e note d'uso
 
