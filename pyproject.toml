@@ -1,0 +1,37 @@
+[project]
+name = "portale-offerte-mcp"
+version = "0.1.0"
+description = "MCP server to search Italian electricity and gas offers from the Portale Offerte open data (ARERA)"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["mcp", "portale-offerte", "arera", "energia", "luce", "gas", "claude"]
+readme = "README.md"
+authors = [{ name = "Marco Patti" }]
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp>=2.3.0,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/marcopa84/PortaleOfferteEnergiaMCP"
+
+[project.scripts]
+portale-offerte-mcp = "portale_offerte_mcp:main"
+
+[build-system]
+requires = ["uv_build>=0.11.29,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+markers = ["live: downloads the real Portale Offerte open data (run with -m live)"]
+addopts = "-m 'not live'"
