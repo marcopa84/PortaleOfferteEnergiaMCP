@@ -57,3 +57,15 @@ def test_avviso_quando_indice_recente_lontano_dalla_media(archivio, monkeypatch)
     monkeypatch.setattr(archivio, "prezzi_storici", mesi)
     assert "PSV" in server._avviso_indici("gas")
     assert server._avviso_indici("luce") is None
+
+
+def test_tra_versioni_di_pari_costo_resta_in_evidenza_quella_valida_piu_a_lungo(archivio, monkeypatch):
+    versioni = [
+        offerta("OTTOBRE", "gas", nome="Casa Gas", data_fine="2026-12-01T23:59:59"),
+        offerta("NOVEMBRE", "gas", nome="Casa Gas", data_fine="2027-01-31T23:59:59"),
+    ]
+    monkeypatch.setattr(archivio, "offerte", versioni)
+    risposta = server.cerca_offerte(commodity="gas", consumo_annuo=1000)
+    [riga] = risposta["risultati"]
+    assert riga["codice"] == "NOVEMBRE"
+    assert [v["codice"] for v in riga["altre_versioni"]] == ["OTTOBRE"]

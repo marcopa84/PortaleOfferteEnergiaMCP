@@ -345,6 +345,9 @@ def cerca_offerte(
     else:
         righe = [_sintesi(o) for o in offerte]
 
+    # A parita di ordinamento viene prima l'offerta valida piu a lungo: e quella che resta
+    # in evidenza quando si raggruppano le versioni (gli ordinamenti successivi sono stabili).
+    righe.sort(key=lambda r: r.get("valida_fino_al") or "", reverse=True)
     if ordinamento == "costo_stimato" and commodity != "dual":
         # Le stime incomplete vanno in fondo: il loro costo e sottostimato.
         righe.sort(key=lambda r: (r.get("stima_incompleta", False), r.get("costo_vendita_anno", 0)))
