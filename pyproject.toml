@@ -11,6 +11,10 @@ requires-python = ">=3.11"
 dependencies = [
     "httpx>=0.28.1",
     "mcp>=2.3.0,<3",
+    # Arriva dall'SDK MCP (pyjwt[crypto]) e il server non la usa. Dalla 49 non ci sono pacchetti
+    # precompilati per i Mac Intel: uv la compilerebbe in Rust (oltre un minuto al primo avvio,
+    # errore se Rust manca). Sui Mac Intel si resta sull'ultima versione con pacchetti pronti.
+    "cryptography<49; sys_platform == 'darwin' and platform_machine == 'x86_64'",
 ]
 
 [project.urls]

@@ -32,14 +32,8 @@ venditore.
 ## Installazione
 
 Serve solo [uv](https://docs.astral.sh/uv/getting-started/installation/) (scarica da sé Python e le
-dipendenze). Non c'è nulla da clonare o compilare.
-
-**Prima fai una volta il warm-up.** Il primo avvio scarica e prepara tutto e può superare il timeout di avvio
-dei client, che farebbero sembrare guasto il server. Esegui prima questo in un terminale, poi registralo:
-
-```bash
-uvx --from git+https://github.com/marcopa84/PortaleOfferteEnergiaMCP portale-offerte-mcp --version
-```
+dipendenze). Non c'è nulla da clonare o compilare: al primo avvio il client scarica tutto in pochi secondi,
+quindi basta registrare il server e riavviare il client.
 
 ### Fallo installare a Claude
 

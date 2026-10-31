@@ -11,7 +11,8 @@ Repository: https://github.com/marcopa84/PortaleOfferteEnergiaMCP
 cloud (es. l'esecuzione di codice in una *chat* di Claude.ai o Claude Desktop), quella sandbox di solito non
 raggiunge `www.ilportaleofferte.it`: un errore DNS o di rete lì **non** significa che il server sia guasto, e
 installarlo nella sandbox non serve all'utente. In quel caso modifica la configurazione locale dell'utente
-(solo se hai accesso ai suoi file) oppure guidalo nei passi 1-3 sul suo computer.
+(solo se hai accesso ai suoi file) oppure guidalo sul suo computer: gli bastano `uv` installato, la voce di
+configurazione del passo 3 e il riavvio del client. Il passo 2 si può saltare.
 
 Cos'è: un server MCP (Python) che legge gli open data del Portale Offerte (ARERA / Acquirente Unico) con i tool
 `cerca_offerte`, `dettaglio_offerta`, `stima_costo`, `elenco_venditori`, `indici_prezzi`, `parametri_regolati`,
@@ -34,11 +35,11 @@ Esegui `uv --version`. Se manca, dillo all'utente e offriti di installarlo (non 
 Poi trova il percorso assoluto di `uvx` (`which uvx` / `where uvx`): le app grafiche spesso non vedono il PATH
 della shell.
 
-## 2. Warm-up della cache (non saltarlo)
+## 2. Controllo rapido (facoltativo)
 
-Il primo avvio scarica e prepara il progetto e le sue dipendenze, e può superare il timeout di avvio di
-Claude Desktop/Code. Se registri il server prima, il client rinuncia e il server sembra guasto. Esegui quindi
-una volta questo comando, aspetta che finisca e controlla che stampi la versione:
+Se puoi eseguire comandi sul computer dell'utente, verifica che `uvx` riesca a installare il server: deve
+stampare la versione in pochi secondi. Serve a scoprire un problema prima di toccare la configurazione; se non
+puoi eseguire comandi lì, salta questo passo, perché il client installa il server da solo al primo avvio.
 
 ```bash
 uvx --from git+https://github.com/marcopa84/PortaleOfferteEnergiaMCP portale-offerte-mcp --version
@@ -132,7 +133,7 @@ nuova.
 | "La pagina Open Data non contiene i file: ..." | Il portale ha cambiato la pagina Open Data: aggiornare (`uvx --refresh --from ...`) e aprire una issue |
 | Server non elencato dopo la modifica della configurazione | Desktop non è stato chiuso del tutto. Uscire con ⌘Q / area di notifica → Esci, riaprire, nuova chat |
 | Errore DNS / di rete verso www.ilportaleofferte.it provando da una chat | Sei in una sandbox cloud, non sul computer dell'utente (vedi inizio di questo file). Installare in locale |
-| Il primo avvio fallisce o va in timeout, il secondo funziona | Cache fredda. Eseguire il warm-up del passo 2, poi riavviare il client. In Claude Code si può alzare il timeout: `MCP_TIMEOUT=120000 claude` |
+| Il primo avvio fallisce o va in timeout, il secondo funziona | Rete lenta al primo scaricamento delle dipendenze. Eseguire il comando del passo 2, poi riavviare il client. In Claude Code si può alzare il timeout: `MCP_TIMEOUT=120000 claude` |
 
 ## Regole per l'assistente
 
